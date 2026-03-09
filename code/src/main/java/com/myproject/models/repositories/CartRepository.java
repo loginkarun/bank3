@@ -6,21 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Repository interface for Cart entity
- */
 @Repository
 public interface CartRepository extends JpaRepository<Cart, String> {
-    /**
-     * Find cart by user ID
-     * @param userId User ID
-     * @return Optional Cart
-     */
+    
     Optional<Cart> findByUserId(String userId);
     
-    /**
-     * Delete cart by user ID
-     * @param userId User ID
-     */
     void deleteByUserId(String userId);
 }
