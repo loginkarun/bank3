@@ -1,133 +1,133 @@
 package com.myproject.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myproject.models.dtos.*;
-import com.myproject.services.ICartService;
+import com.myproject.services.interfaces.CartService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(CartController.class)
 class CartControllerTest {
-
-    @Mock
-    private ICartService cartService;
-
-    @InjectMocks
-    private CartControllerUpdated cartController;
-
-    private CartDTO mockCartDTO;
-    private AddToCartRequest addToCartRequest;
-
+    
+    @Autowired
+    private MockMvc mockMvc;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
+    
+    @MockBean
+    private CartService cartService;
+    
+    private CartResponse cartResponse;
+    private AddItemRequest addItemRequest;
+    private UpdateItemRequest updateItemRequest;
+    
     @BeforeEach
     void setUp() {
-        List<CartItemDTO> items = new ArrayList<>();
-        CartItemDTO item = CartItemDTO.builder()
-                .id("item1")
-                .productId("prod1")
-                .name("Laptop")
-                .price(new BigDecimal("999.99"))
-                .quantity(1)
-                .subtotal(new BigDecimal("999.99"))
-                .build();
-        items.add(item);
-
-        mockCartDTO = CartDTO.builder()
-                .id("cart1")
-                .userId("user1")
-                .items(items)
-                .totalAmount(new BigDecimal("999.99"))
-                .totalItems(1)
-                .build();
-
-        addToCartRequest = AddToCartRequest.builder()
-                .productId("prod1")
-                .quantity(1)
-                .build();
+        // Setup test data
+        CartItem cartItem = new CartItem("PROD-12345", "Wireless Mouse", 29.99, 2, 59.98);
+        List<CartItem> items = new ArrayList<>();
+        items.add(cartItem);
+        
+        cartResponse = new CartResponse();
+        cartResponse.setId("CART-001");
+        cartResponse.setUserId("user123");
+        cartResponse.setItems(items);
+        cartResponse.setTotals(59.98);
+        
+        addItemRequest = new AddItemRequest("PROD-12345", 2);
+        updateItemRequest = new UpdateItemRequest("PROD-12345", 3);
     }
-
+    
     @Test
-    void testAddItemToCart() {
-        when(cartService.addItemToCart(anyString(), any(AddToCartRequest.class)))
-                .thenReturn(mockCartDTO);
-
-        ResponseEntity<ApiResponse<CartDTO>> response = cartController.addItemToCart("user1", addToCartRequest);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().isSuccess());
-        assertEquals("Item added to cart successfully", response.getBody().getMessage());
-        assertNotNull(response.getBody().getData());
-        verify(cartService, times(1)).addItemToCart(anyString(), any(AddToCartRequest.class));
+    @WithMockUser(username = "user123")
+    void testAddItemToCart_Success() throws Exception {
+        when(cartService.addItemToCart(any(String.class), any(AddItemRequest.class)))
+            .thenReturn(cartResponse);
+        
+        mockMvc.perform(post("/api/cart/add")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(addItemRequest)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value("CART-001"))
+            .andExpect(jsonPath("$.userId").value("user123"))
+            .andExpect(jsonPath("$.totals").value(59.98));
+        
+        verify(cartService, times(1)).addItemToCart(any(String.class), any(AddItemRequest.class));
     }
-
+    
     @Test
-    void testGetCart() {
-        when(cartService.getCart(anyString())).thenReturn(mockCartDTO);
-
-        ResponseEntity<ApiResponse<CartDTO>> response = cartController.getCart("user1");
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().isSuccess());
-        assertEquals("Cart retrieved successfully", response.getBody().getMessage());
-        verify(cartService, times(1)).getCart(anyString());
+    @WithMockUser(username = "user123")
+    void testGetCart_Success() throws Exception {
+        when(cartService.getCart(any(String.class))).thenReturn(cartResponse);
+        
+        mockMvc.perform(get("/api/cart")
+                .with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("CART-001"))
+            .andExpect(jsonPath("$.items").isArray())
+            .andExpect(jsonPath("$.items[0].productId").value("PROD-12345"));
+        
+        verify(cartService, times(1)).getCart(any(String.class));
     }
-
+    
     @Test
-    void testUpdateCartItem() {
-        UpdateCartRequest updateRequest = UpdateCartRequest.builder()
-                .productId("prod1")
-                .quantity(2)
-                .build();
-
-        when(cartService.updateCartItem(anyString(), any(UpdateCartRequest.class)))
-                .thenReturn(mockCartDTO);
-
-        ResponseEntity<ApiResponse<CartDTO>> response = cartController.updateCartItem("user1", updateRequest);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody().isSuccess());
-        verify(cartService, times(1)).updateCartItem(anyString(), any(UpdateCartRequest.class));
+    @WithMockUser(username = "user123")
+    void testUpdateCartItem_Success() throws Exception {
+        when(cartService.updateCartItem(any(String.class), any(UpdateItemRequest.class)))
+            .thenReturn(cartResponse);
+        
+        mockMvc.perform(put("/api/cart/update")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateItemRequest)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("CART-001"));
+        
+        verify(cartService, times(1)).updateCartItem(any(String.class), any(UpdateItemRequest.class));
     }
-
+    
     @Test
-    void testRemoveCartItem() {
-        when(cartService.removeCartItem(anyString(), anyString())).thenReturn(mockCartDTO);
-
-        ResponseEntity<ApiResponse<CartDTO>> response = cartController.removeCartItem("user1", "item1");
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody().isSuccess());
-        verify(cartService, times(1)).removeCartItem(anyString(), anyString());
+    @WithMockUser(username = "user123")
+    void testRemoveItemFromCart_Success() throws Exception {
+        when(cartService.removeItemFromCart(any(String.class), eq("PROD-12345")))
+            .thenReturn(cartResponse);
+        
+        mockMvc.perform(delete("/api/cart/remove/PROD-12345")
+                .with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("CART-001"));
+        
+        verify(cartService, times(1)).removeItemFromCart(any(String.class), eq("PROD-12345"));
     }
-
+    
     @Test
-    void testClearCart() {
-        doNothing().when(cartService).clearCart(anyString());
-
-        ResponseEntity<ApiResponse<String>> response = cartController.clearCart("user1");
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody().isSuccess());
-        verify(cartService, times(1)).clearCart(anyString());
+    @WithMockUser(username = "user123")
+    void testClearCart_Success() throws Exception {
+        doNothing().when(cartService).clearCart(any(String.class));
+        
+        mockMvc.perform(delete("/api/cart/clear")
+                .with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("Cart cleared successfully"));
+        
+        verify(cartService, times(1)).clearCart(any(String.class));
     }
 }
