@@ -1,0 +1,33 @@
+{
+  "id": "bank3-env",
+  "name": "Bank3 Shopping Cart Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "test-user-123",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "cartItemId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2024-01-15T10:00:00.000Z",
+  "_postman_exported_using": "Postman/10.0.0"
+}
