@@ -6,7 +6,7 @@ on:
       repo:
         description: 'Repository name'
         required: false
-        default: 'scib_demo'
+        default: 'bank3'
       branch:
         description: 'Branch name'
         required: false
