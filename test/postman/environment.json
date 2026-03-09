@@ -1,33 +1,51 @@
 {
-  "id": "bank3-env",
-  "name": "Bank3 Shopping Cart Environment",
+  "id": "cart-api-env-001",
+  "name": "Shopping Cart API - Test Environment",
   "values": [
     {
-      "key": "baseUrl",
-      "value": "http://localhost:8080",
+      "key": "BASE_URL",
+      "value": "http://localhost:8080/api",
       "type": "default",
       "enabled": true
     },
     {
-      "key": "userId",
-      "value": "test-user-123",
+      "key": "USER_ID",
+      "value": "guest-user",
       "type": "default",
       "enabled": true
     },
     {
-      "key": "productId",
+      "key": "PRODUCT_ID_1",
+      "value": "PROD-12345",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "PRODUCT_ID_2",
+      "value": "PROD-67890",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "CART_ID",
       "value": "",
       "type": "default",
       "enabled": true
     },
     {
-      "key": "cartItemId",
+      "key": "AUTH_TOKEN",
       "value": "",
+      "type": "secret",
+      "enabled": false
+    },
+    {
+      "key": "TIMEOUT",
+      "value": "5000",
       "type": "default",
       "enabled": true
     }
   ],
   "_postman_variable_scope": "environment",
-  "_postman_exported_at": "2024-01-15T10:00:00.000Z",
+  "_postman_exported_at": "2024-01-15T00:00:00.000Z",
   "_postman_exported_using": "Postman/10.0.0"
 }
