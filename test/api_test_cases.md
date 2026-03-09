@@ -1,841 +1,712 @@
-# API Test Cases - Bank3 Shopping Cart Application
+# API Test Cases Documentation
 
-## Test Execution Information
-- **Application**: Bank3 Shopping Cart API
-- **Base URL**: http://localhost:8080/api
-- **Test Environment**: Local Development
-- **API Version**: v1
-- **Date Generated**: 2024-01-15
-
----
-
-## Table of Contents
-1. [Product API Test Cases](#product-api-test-cases)
-2. [Cart API Test Cases](#cart-api-test-cases)
-3. [Test Data](#test-data)
-4. [Validation Rules](#validation-rules)
+## Project: Shopping Cart API
+**Repository:** bank3  
+**Branch:** main  
+**Base URL:** http://localhost:8080/api  
+**Generated:** 2024-01-15  
 
 ---
 
-## Product API Test Cases
+## Test Coverage Summary
 
-### TC-PROD-001: Get All Products - Happy Path
-
-**Test Case ID**: TC-PROD-001  
-**Endpoint**: GET /api/v1/products  
-**Scenario**: Retrieve all available products successfully  
-**Priority**: High  
-**Test Type**: Positive
-
-**Preconditions**:
-- Application is running on http://localhost:8080
-- Database contains sample products
-
-**Test Steps**:
-1. Send GET request to `/api/v1/products`
-2. Verify response status code
-3. Verify response structure
-4. Verify product data fields
-
-**Expected Result**:
-- Status Code: 200 OK
-- Response contains:
-  - `success`: true
-  - `message`: "Products retrieved successfully"
-  - `data`: Array of product objects
-- Each product contains:
-  - `id`: String (UUID)
-  - `name`: String
-  - `price`: Number (BigDecimal)
-  - `availableStock`: Integer
-  - `description`: String
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+| Category | Test Cases | Endpoints Covered |
+|----------|------------|-------------------|
+| Cart Operations | 15 | 5 |
+| Product Operations | 4 | 2 |
+| Validation Tests | 8 | All |
+| Error Handling | 6 | All |
+| **Total** | **33** | **7** |
 
 ---
 
-### TC-PROD-002: Get Product By ID - Happy Path
+## 1. Cart Operations Test Cases
 
-**Test Case ID**: TC-PROD-002  
-**Endpoint**: GET /api/v1/products/{productId}  
-**Scenario**: Retrieve a specific product by valid ID  
-**Priority**: High  
-**Test Type**: Positive
+### TC-CART-001: Add Item to Cart - Success
+**Test Case ID:** TC-CART-001  
+**Endpoint:** POST /api/cart/add  
+**Scenario:** Add a valid product to cart with valid quantity  
+**Priority:** High  
 
-**Preconditions**:
+**Preconditions:**
 - Application is running
-- Valid product ID exists in database
-- Product ID obtained from TC-PROD-001
+- Product PROD-12345 exists in catalog
+- Product has sufficient stock (>= 2)
 
-**Test Steps**:
-1. Send GET request to `/api/v1/products/{validProductId}`
-2. Verify response status code
-3. Verify product details match the requested ID
-4. Verify all required fields are present
+**Test Steps:**
+1. Send POST request to /api/cart/add
+2. Include valid request body:
+   ```json
+   {
+     "productId": "PROD-12345",
+     "quantity": 2
+   }
+   ```
+3. Verify response
 
-**Expected Result**:
-- Status Code: 200 OK
-- Response contains:
-  - `success`: true
-  - `message`: "Product retrieved successfully"
-  - `data`: Single product object with all fields
-- Product ID matches the requested ID
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
-
----
-
-### TC-PROD-003: Get Product By ID - Product Not Found
-
-**Test Case ID**: TC-PROD-003  
-**Endpoint**: GET /api/v1/products/{productId}  
-**Scenario**: Attempt to retrieve product with invalid/non-existent ID  
-**Priority**: Medium  
-**Test Type**: Negative
-
-**Preconditions**:
-- Application is running
-- Product ID does not exist in database
-
-**Test Steps**:
-1. Send GET request to `/api/v1/products/INVALID-ID-999`
-2. Verify response status code
-3. Verify error message
-4. Verify error structure
-
-**Expected Result**:
-- Status Code: 404 Not Found
-- Response contains:
-  - `errorCode`: "PRODUCT_NOT_FOUND"
-  - `message`: "Product not found: INVALID-ID-999"
-  - `timestamp`: ISO 8601 format
-  - `traceId`: UUID
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
-
----
-
-## Cart API Test Cases
-
-### TC-CART-001: Add Item to Cart - Happy Path
-
-**Test Case ID**: TC-CART-001  
-**Endpoint**: POST /api/v1/cart/add  
-**Scenario**: Successfully add a valid product to cart  
-**Priority**: Critical  
-**Test Type**: Positive
-
-**Preconditions**:
-- Application is running
-- Valid product ID exists
-- Product has sufficient stock
-- User ID header is provided
-
-**Test Steps**:
-1. Send POST request to `/api/v1/cart/add` with:
-   - Header: `X-User-Id: test-user-123`
-   - Body: `{"productId": "<validProductId>", "quantity": 2}`
-2. Verify response status code
-3. Verify cart is created/updated
-4. Verify item is added with correct quantity
-5. Verify total amount is calculated correctly
-
-**Request Body**:
-```json
-{
-  "productId": "<validProductId>",
-  "quantity": 2
-}
-```
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 201 Created
 - Response contains:
-  - `success`: true
-  - `message`: "Item added to cart successfully"
-  - `data`: Cart object with:
-    - `id`: String (UUID)
-    - `userId`: "test-user-123"
-    - `items`: Array containing the added item
-    - `totalAmount`: Calculated total (price × quantity)
-    - `totalItems`: Number of items in cart
+  - Cart ID
+  - User ID
+  - Items array with added product
+  - Correct totals calculation
+  - Item subtotal = price * quantity
 
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+**Assertions:**
+```javascript
+pm.response.to.have.status(201);
+pm.expect(response.id).to.exist;
+pm.expect(response.items).to.be.an('array');
+pm.expect(response.totals).to.be.a('number');
+```
 
 ---
 
 ### TC-CART-002: Add Item to Cart - Product Not Found
+**Test Case ID:** TC-CART-002  
+**Endpoint:** POST /api/cart/add  
+**Scenario:** Attempt to add non-existent product to cart  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-002  
-**Endpoint**: POST /api/v1/cart/add  
-**Scenario**: Attempt to add non-existent product to cart  
-**Priority**: High  
-**Test Type**: Negative
-
-**Preconditions**:
+**Preconditions:**
 - Application is running
-- Product ID does not exist
+- Product INVALID-PROD does not exist
 
-**Test Steps**:
-1. Send POST request with invalid product ID
-2. Verify error response
-3. Verify cart is not modified
+**Test Steps:**
+1. Send POST request to /api/cart/add
+2. Include invalid product ID:
+   ```json
+   {
+     "productId": "INVALID-PROD",
+     "quantity": 1
+   }
+   ```
 
-**Request Body**:
-```json
-{
-  "productId": "INVALID-999",
-  "quantity": 1
-}
-```
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 404 Not Found
-- Response contains:
-  - `errorCode`: "PRODUCT_NOT_FOUND"
-  - `message`: "Product not found: INVALID-999"
+- Error response contains:
+  - errorCode: "PRODUCT_NOT_FOUND"
+  - message describing the error
+  - timestamp
+  - traceId
 
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+**Assertions:**
+```javascript
+pm.response.to.have.status(404);
+pm.expect(response.errorCode).to.equal('PRODUCT_NOT_FOUND');
+pm.expect(response.message).to.include('Product not found');
+```
 
 ---
 
-### TC-CART-003: Add Item to Cart - Invalid Quantity (Zero)
+### TC-CART-003: Add Item to Cart - Insufficient Stock
+**Test Case ID:** TC-CART-003  
+**Endpoint:** POST /api/cart/add  
+**Scenario:** Attempt to add more items than available stock  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-003  
-**Endpoint**: POST /api/v1/cart/add  
-**Scenario**: Attempt to add item with quantity = 0  
-**Priority**: High  
-**Test Type**: Negative - Validation
-
-**Preconditions**:
+**Preconditions:**
 - Application is running
-- Valid product ID exists
+- Product exists with limited stock (e.g., 5 units)
 
-**Test Steps**:
-1. Send POST request with quantity = 0
-2. Verify validation error response
-3. Verify cart is not modified
+**Test Steps:**
+1. Send POST request to /api/cart/add
+2. Request quantity exceeding available stock:
+   ```json
+   {
+     "productId": "PROD-12345",
+     "quantity": 1000
+   }
+   ```
 
-**Request Body**:
-```json
-{
-  "productId": "<validProductId>",
-  "quantity": 0
-}
+**Expected Result:**
+- Status Code: 409 Conflict
+- Error response contains:
+  - errorCode: "INSUFFICIENT_STOCK"
+  - message: "Insufficient stock for product"
+
+**Assertions:**
+```javascript
+pm.response.to.have.status(409);
+pm.expect(response.errorCode).to.equal('INSUFFICIENT_STOCK');
 ```
-
-**Expected Result**:
-- Status Code: 400 Bad Request
-- Response contains:
-  - `errorCode`: "VALIDATION_ERROR"
-  - `message`: "Validation failed"
-  - `details`: Array with field error:
-    - `field`: "quantity"
-    - `issue`: "Quantity must be at least 1"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
 
 ---
 
-### TC-CART-004: Add Item to Cart - Invalid Quantity (Negative)
+### TC-CART-004: Add Item to Cart - Invalid Quantity (Zero)
+**Test Case ID:** TC-CART-004  
+**Endpoint:** POST /api/cart/add  
+**Scenario:** Validation failure for quantity = 0  
+**Priority:** Medium  
 
-**Test Case ID**: TC-CART-004  
-**Endpoint**: POST /api/v1/cart/add  
-**Scenario**: Attempt to add item with negative quantity  
-**Priority**: High  
-**Test Type**: Negative - Validation
-
-**Preconditions**:
+**Preconditions:**
 - Application is running
-- Valid product ID exists
 
-**Test Steps**:
-1. Send POST request with quantity = -1
-2. Verify validation error response
+**Test Steps:**
+1. Send POST request with quantity = 0:
+   ```json
+   {
+     "productId": "PROD-12345",
+     "quantity": 0
+   }
+   ```
 
-**Request Body**:
-```json
-{
-  "productId": "<validProductId>",
-  "quantity": -1
-}
-```
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 400 Bad Request
-- Validation error for quantity field
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Error response contains:
+  - errorCode: "VALIDATION_ERROR"
+  - details array with field "quantity"
+  - message: "Quantity must be at least 1"
 
 ---
 
 ### TC-CART-005: Add Item to Cart - Missing Product ID
+**Test Case ID:** TC-CART-005  
+**Endpoint:** POST /api/cart/add  
+**Scenario:** Validation failure for missing productId  
+**Priority:** Medium  
 
-**Test Case ID**: TC-CART-005  
-**Endpoint**: POST /api/v1/cart/add  
-**Scenario**: Attempt to add item without product ID  
-**Priority**: High  
-**Test Type**: Negative - Validation
+**Test Steps:**
+1. Send POST request with missing productId:
+   ```json
+   {
+     "quantity": 2
+   }
+   ```
 
-**Preconditions**:
-- Application is running
-
-**Test Steps**:
-1. Send POST request with missing productId field
-2. Verify validation error response
-
-**Request Body**:
-```json
-{
-  "quantity": 2
-}
-```
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 400 Bad Request
-- Response contains:
-  - `errorCode`: "VALIDATION_ERROR"
-  - `details`: Array with field error:
-    - `field`: "productId"
-    - `issue`: "Product ID is required"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Error response contains validation error for "productId"
+- message: "Product ID is required"
 
 ---
 
-### TC-CART-006: Add Item to Cart - Insufficient Stock
+### TC-CART-006: Add Item to Cart - Negative Quantity
+**Test Case ID:** TC-CART-006  
+**Endpoint:** POST /api/cart/add  
+**Scenario:** Validation failure for negative quantity  
+**Priority:** Medium  
 
-**Test Case ID**: TC-CART-006  
-**Endpoint**: POST /api/v1/cart/add  
-**Scenario**: Attempt to add more items than available in stock  
-**Priority**: Critical  
-**Test Type**: Negative - Business Logic
+**Test Steps:**
+1. Send POST request with negative quantity:
+   ```json
+   {
+     "productId": "PROD-12345",
+     "quantity": -5
+   }
+   ```
 
-**Preconditions**:
-- Application is running
-- Valid product ID exists
-- Product has limited stock (e.g., 10 units)
-
-**Test Steps**:
-1. Send POST request with quantity exceeding available stock (e.g., 9999)
-2. Verify insufficient stock error
-3. Verify cart is not modified
-
-**Request Body**:
-```json
-{
-  "productId": "<validProductId>",
-  "quantity": 9999
-}
-```
-
-**Expected Result**:
-- Status Code: 409 Conflict
-- Response contains:
-  - `errorCode`: "INSUFFICIENT_STOCK"
-  - `message`: "Insufficient stock for product: <productId>"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+**Expected Result:**
+- Status Code: 400 Bad Request
+- Validation error for quantity field
 
 ---
 
-### TC-CART-007: Get Cart - Happy Path
+### TC-CART-007: Get Cart - Success
+**Test Case ID:** TC-CART-007  
+**Endpoint:** GET /api/cart  
+**Scenario:** Retrieve existing cart for user  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-007  
-**Endpoint**: GET /api/v1/cart  
-**Scenario**: Retrieve cart for existing user  
-**Priority**: High  
-**Test Type**: Positive
+**Preconditions:**
+- User has an existing cart with items
 
-**Preconditions**:
-- Application is running
-- User has items in cart (from TC-CART-001)
-- User ID header is provided
+**Test Steps:**
+1. Send GET request to /api/cart
+2. Verify response structure
 
-**Test Steps**:
-1. Send GET request to `/api/v1/cart` with header `X-User-Id: test-user-123`
-2. Verify response status code
-3. Verify cart contains previously added items
-4. Verify total calculations
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 200 OK
 - Response contains:
-  - `success`: true
-  - `message`: "Cart retrieved successfully"
-  - `data`: Cart object with:
-    - `id`: String
-    - `userId`: "test-user-123"
-    - `items`: Array of cart items
-    - `totalAmount`: Sum of all item subtotals
-    - `totalItems`: Count of items
+  - Cart ID
+  - User ID
+  - Items array (may be empty)
+  - Totals (sum of all item subtotals)
 
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+**Assertions:**
+```javascript
+pm.response.to.have.status(200);
+pm.expect(response.id).to.exist;
+pm.expect(response.userId).to.exist;
+pm.expect(response.items).to.be.an('array');
+pm.expect(response.totals).to.be.a('number');
+```
 
 ---
 
 ### TC-CART-008: Get Cart - Cart Not Found
+**Test Case ID:** TC-CART-008  
+**Endpoint:** GET /api/cart  
+**Scenario:** Attempt to get cart for user without cart  
+**Priority:** Medium  
 
-**Test Case ID**: TC-CART-008  
-**Endpoint**: GET /api/v1/cart  
-**Scenario**: Attempt to retrieve cart for user without cart  
-**Priority**: Medium  
-**Test Type**: Negative
+**Preconditions:**
+- User does not have an existing cart
 
-**Preconditions**:
-- Application is running
-- User ID does not have an existing cart
+**Test Steps:**
+1. Send GET request to /api/cart with new user ID
 
-**Test Steps**:
-1. Send GET request with new/non-existent user ID
-2. Verify error response
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 404 Not Found
-- Response contains:
-  - `errorCode`: "CART_NOT_FOUND"
-  - `message`: "Cart not found for user: <userId>"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Error response:
+  - errorCode: "CART_NOT_FOUND"
+  - message: "Cart not found for user"
 
 ---
 
-### TC-CART-009: Update Cart Item - Happy Path
+### TC-CART-009: Update Cart Item - Success
+**Test Case ID:** TC-CART-009  
+**Endpoint:** PUT /api/cart/update  
+**Scenario:** Update quantity of existing cart item  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-009  
-**Endpoint**: PUT /api/v1/cart/update  
-**Scenario**: Successfully update quantity of existing cart item  
-**Priority**: High  
-**Test Type**: Positive
-
-**Preconditions**:
-- Application is running
-- User has items in cart
+**Preconditions:**
+- Cart exists with item PROD-12345
 - Product has sufficient stock for new quantity
 
-**Test Steps**:
-1. Send PUT request to `/api/v1/cart/update` with:
-   - Header: `X-User-Id: test-user-123`
-   - Body: `{"productId": "<existingProductId>", "quantity": 3}`
-2. Verify response status code
-3. Verify item quantity is updated
-4. Verify total amount is recalculated
+**Test Steps:**
+1. Send PUT request to /api/cart/update:
+   ```json
+   {
+     "productId": "PROD-12345",
+     "quantity": 5
+   }
+   ```
 
-**Request Body**:
-```json
-{
-  "productId": "<existingProductId>",
-  "quantity": 3
-}
-```
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 200 OK
-- Response contains:
-  - `success`: true
-  - `message`: "Cart item updated successfully"
-  - `data`: Updated cart with new quantity and recalculated totals
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Response shows updated quantity
+- Subtotal recalculated correctly
+- Cart totals updated
 
 ---
 
-### TC-CART-010: Update Cart Item - Invalid Quantity
+### TC-CART-010: Update Cart Item - Product Not in Cart
+**Test Case ID:** TC-CART-010  
+**Endpoint:** PUT /api/cart/update  
+**Scenario:** Attempt to update item not in cart  
+**Priority:** Medium  
 
-**Test Case ID**: TC-CART-010  
-**Endpoint**: PUT /api/v1/cart/update  
-**Scenario**: Attempt to update item with invalid quantity  
-**Priority**: High  
-**Test Type**: Negative - Validation
+**Test Steps:**
+1. Send PUT request for product not in cart:
+   ```json
+   {
+     "productId": "PROD-99999",
+     "quantity": 3
+   }
+   ```
 
-**Preconditions**:
-- Application is running
-- User has items in cart
-
-**Test Steps**:
-1. Send PUT request with quantity = -1
-2. Verify validation error response
-
-**Request Body**:
-```json
-{
-  "productId": "<existingProductId>",
-  "quantity": -1
-}
-```
-
-**Expected Result**:
-- Status Code: 400 Bad Request
-- Validation error for quantity field
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
-
----
-
-### TC-CART-011: Update Cart Item - Product Not in Cart
-
-**Test Case ID**: TC-CART-011  
-**Endpoint**: PUT /api/v1/cart/update  
-**Scenario**: Attempt to update quantity for product not in cart  
-**Priority**: Medium  
-**Test Type**: Negative
-
-**Preconditions**:
-- Application is running
-- User has a cart
-- Product ID is not in user's cart
-
-**Test Steps**:
-1. Send PUT request with product ID not in cart
-2. Verify error response
-
-**Request Body**:
-```json
-{
-  "productId": "<productNotInCart>",
-  "quantity": 2
-}
-```
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 404 Not Found
-- Response contains:
-  - `errorCode`: "PRODUCT_NOT_FOUND"
-  - `message`: "Item not found in cart: <productId>"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Error: "Product not found in cart"
 
 ---
 
-### TC-CART-012: Update Cart Item - Insufficient Stock
+### TC-CART-011: Update Cart Item - Insufficient Stock
+**Test Case ID:** TC-CART-011  
+**Endpoint:** PUT /api/cart/update  
+**Scenario:** Update quantity exceeding available stock  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-012  
-**Endpoint**: PUT /api/v1/cart/update  
-**Scenario**: Attempt to update quantity beyond available stock  
-**Priority**: High  
-**Test Type**: Negative - Business Logic
+**Test Steps:**
+1. Send PUT request with quantity > available stock
 
-**Preconditions**:
-- Application is running
-- User has items in cart
-- Product has limited stock
-
-**Test Steps**:
-1. Send PUT request with quantity exceeding stock
-2. Verify insufficient stock error
-
-**Request Body**:
-```json
-{
-  "productId": "<existingProductId>",
-  "quantity": 9999
-}
-```
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 409 Conflict
-- Response contains:
-  - `errorCode`: "INSUFFICIENT_STOCK"
-  - `message`: "Insufficient stock for product: <productId>"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Error: "INSUFFICIENT_STOCK"
 
 ---
 
-### TC-CART-013: Remove Cart Item - Happy Path
+### TC-CART-012: Remove Item from Cart - Success
+**Test Case ID:** TC-CART-012  
+**Endpoint:** DELETE /api/cart/remove/{id}  
+**Scenario:** Remove existing item from cart  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-013  
-**Endpoint**: DELETE /api/v1/cart/remove/{itemId}  
-**Scenario**: Successfully remove an item from cart  
-**Priority**: High  
-**Test Type**: Positive
+**Preconditions:**
+- Cart contains item with productId PROD-12345
 
-**Preconditions**:
-- Application is running
-- User has items in cart
-- Valid cart item ID exists
+**Test Steps:**
+1. Send DELETE request to /api/cart/remove/PROD-12345
 
-**Test Steps**:
-1. Send DELETE request to `/api/v1/cart/remove/{validItemId}`
-2. Verify response status code
-3. Verify item is removed from cart
-4. Verify total amount is recalculated
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 200 OK
-- Response contains:
-  - `success`: true
-  - `message`: "Item removed from cart successfully"
-  - `data`: Updated cart without the removed item
-- Total amount is recalculated correctly
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Response shows cart without removed item
+- Cart totals recalculated
 
 ---
 
-### TC-CART-014: Remove Cart Item - Item Not Found
+### TC-CART-013: Remove Item from Cart - Item Not Found
+**Test Case ID:** TC-CART-013  
+**Endpoint:** DELETE /api/cart/remove/{id}  
+**Scenario:** Attempt to remove non-existent item  
+**Priority:** Medium  
 
-**Test Case ID**: TC-CART-014  
-**Endpoint**: DELETE /api/v1/cart/remove/{itemId}  
-**Scenario**: Attempt to remove non-existent item  
-**Priority**: Medium  
-**Test Type**: Negative
+**Test Steps:**
+1. Send DELETE request for non-existent product
 
-**Preconditions**:
-- Application is running
-- User has a cart
-
-**Test Steps**:
-1. Send DELETE request with invalid item ID
-2. Verify error response
-
-**Expected Result**:
+**Expected Result:**
 - Status Code: 404 Not Found
-- Response contains:
-  - `errorCode`: "PRODUCT_NOT_FOUND"
-  - `message`: "Item not found: INVALID-ITEM-999"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+- Error: "Product not found in cart"
 
 ---
 
-### TC-CART-015: Clear Cart - Happy Path
+### TC-CART-014: Clear Cart - Success
+**Test Case ID:** TC-CART-014  
+**Endpoint:** DELETE /api/cart/clear  
+**Scenario:** Clear all items from cart  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-015  
-**Endpoint**: DELETE /api/v1/cart/clear  
-**Scenario**: Successfully clear all items from cart  
-**Priority**: High  
-**Test Type**: Positive
+**Preconditions:**
+- Cart exists with items
 
-**Preconditions**:
+**Test Steps:**
+1. Send DELETE request to /api/cart/clear
+
+**Expected Result:**
+- Status Code: 200 OK
+- Success message: "Cart cleared successfully"
+- Timestamp in response
+
+---
+
+### TC-CART-015: Clear Cart - Cart Not Found
+**Test Case ID:** TC-CART-015  
+**Endpoint:** DELETE /api/cart/clear  
+**Scenario:** Attempt to clear non-existent cart  
+**Priority:** Low  
+
+**Test Steps:**
+1. Send DELETE request for user without cart
+
+**Expected Result:**
+- Status Code: 404 Not Found
+- Error: "Cart not found"
+
+---
+
+## 2. Product Operations Test Cases
+
+### TC-PROD-001: Get All Products - Success
+**Test Case ID:** TC-PROD-001  
+**Endpoint:** GET /api/v1/products  
+**Scenario:** Retrieve list of all available products  
+**Priority:** High  
+
+**Preconditions:**
 - Application is running
-- User has items in cart
+- Product catalog is initialized
 
-**Test Steps**:
-1. Send DELETE request to `/api/v1/cart/clear`
-2. Verify response status code
-3. Verify success message
-4. Verify cart is empty (optional: call GET /cart to confirm)
+**Test Steps:**
+1. Send GET request to /api/v1/products
 
-**Expected Result**:
+**Expected Result:**
 - Status Code: 200 OK
 - Response contains:
-  - `success`: true
-  - `message`: "Cart cleared successfully"
-  - `data`: "Cart has been cleared"
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+  - success: true
+  - message: "Products retrieved successfully"
+  - data: array of products
+- Each product has: id, name, price, availableStock, description
 
 ---
 
-### TC-CART-016: Clear Cart - Cart Not Found
+### TC-PROD-002: Get Product by ID - Success
+**Test Case ID:** TC-PROD-002  
+**Endpoint:** GET /api/v1/products/{productId}  
+**Scenario:** Retrieve specific product details  
+**Priority:** High  
 
-**Test Case ID**: TC-CART-016  
-**Endpoint**: DELETE /api/v1/cart/clear  
-**Scenario**: Attempt to clear cart for user without cart  
-**Priority**: Low  
-**Test Type**: Negative
+**Test Steps:**
+1. Send GET request to /api/v1/products/{validProductId}
 
-**Preconditions**:
-- Application is running
-- User does not have a cart
-
-**Test Steps**:
-1. Send DELETE request with new user ID
-2. Verify error response or successful no-op
-
-**Expected Result**:
-- Status Code: 404 Not Found OR 200 OK (depending on implementation)
-- If 404: Error message indicating cart not found
-- If 200: Success message (idempotent operation)
-
-**Actual Result**: [To be filled during execution]
-
-**Status**: [PASS/FAIL]
+**Expected Result:**
+- Status Code: 200 OK
+- Response contains product details
+- All fields populated correctly
 
 ---
 
-## Test Data
+### TC-PROD-003: Get Product by ID - Not Found
+**Test Case ID:** TC-PROD-003  
+**Endpoint:** GET /api/v1/products/{productId}  
+**Scenario:** Attempt to retrieve non-existent product  
+**Priority:** Medium  
 
-### Sample Products
-```json
-[
-  {
-    "id": "<generated-uuid>",
-    "name": "Laptop",
-    "price": 999.99,
-    "availableStock": 10,
-    "description": "High performance laptop"
-  },
-  {
-    "id": "<generated-uuid>",
-    "name": "Mouse",
-    "price": 29.99,
-    "availableStock": 50,
-    "description": "Wireless mouse"
-  }
-]
-```
+**Test Steps:**
+1. Send GET request with invalid product ID
 
-### Test Users
-- **User ID**: test-user-123
-- **User ID**: test-user-456 (for multi-user scenarios)
+**Expected Result:**
+- Status Code: 404 Not Found
+- Error: "Product not found"
 
 ---
 
-## Validation Rules
+### TC-PROD-004: Get Product by ID - Invalid ID Format
+**Test Case ID:** TC-PROD-004  
+**Endpoint:** GET /api/v1/products/{productId}  
+**Scenario:** Request with malformed product ID  
+**Priority:** Low  
 
-### Request Validation
+**Test Steps:**
+1. Send GET request with special characters or SQL injection attempt
 
-| Field | Validation Rule | Error Message |
-|-------|----------------|---------------|
-| productId | @NotBlank | "Product ID is required" |
-| quantity | @Min(1) | "Quantity must be at least 1" |
-
-### Business Logic Validation
-
-| Scenario | Validation | Error Code | HTTP Status |
-|----------|-----------|------------|-------------|
-| Product not found | Product exists in catalog | PRODUCT_NOT_FOUND | 404 |
-| Insufficient stock | Requested quantity ≤ available stock | INSUFFICIENT_STOCK | 409 |
-| Cart not found | Cart exists for user | CART_NOT_FOUND | 404 |
-| Item not in cart | Item exists in user's cart | PRODUCT_NOT_FOUND | 404 |
+**Expected Result:**
+- Status Code: 400 Bad Request or 404 Not Found
+- Appropriate error message
 
 ---
 
-## Edge Cases
+## 3. Integration Test Scenarios
 
-### TC-EDGE-001: Add Same Item Multiple Times
-**Scenario**: Add the same product to cart multiple times  
-**Expected**: Quantity should be accumulated, not create duplicate entries
+### TC-INT-001: Complete Shopping Flow
+**Test Case ID:** TC-INT-001  
+**Scenario:** End-to-end shopping cart workflow  
+**Priority:** Critical  
 
-### TC-EDGE-002: Update Item to Same Quantity
-**Scenario**: Update item quantity to its current value  
-**Expected**: Operation succeeds, no changes to cart
+**Test Steps:**
+1. Get all products (GET /api/v1/products)
+2. Add first product to cart (POST /api/cart/add)
+3. Add second product to cart (POST /api/cart/add)
+4. Get cart to verify items (GET /api/cart)
+5. Update quantity of first item (PUT /api/cart/update)
+6. Remove second item (DELETE /api/cart/remove/{id})
+7. Get cart to verify changes (GET /api/cart)
+8. Clear cart (DELETE /api/cart/clear)
 
-### TC-EDGE-003: Remove Last Item from Cart
-**Scenario**: Remove the only item in cart  
-**Expected**: Cart becomes empty, total amount = 0
-
-### TC-EDGE-004: Concurrent Cart Operations
-**Scenario**: Multiple simultaneous requests to modify same cart  
-**Expected**: Operations are handled atomically, no data corruption
-
-### TC-EDGE-005: Large Quantity Values
-**Scenario**: Add item with maximum integer quantity  
-**Expected**: System handles large numbers correctly or returns appropriate error
-
----
-
-## Performance Test Cases
-
-### TC-PERF-001: Response Time - Get All Products
-**Acceptance Criteria**: Response time < 500ms for 100 products
-
-### TC-PERF-002: Response Time - Add to Cart
-**Acceptance Criteria**: Response time < 300ms
-
-### TC-PERF-003: Concurrent Users
-**Acceptance Criteria**: System handles 100 concurrent users without errors
+**Expected Result:**
+- All operations succeed
+- Cart state consistent after each operation
+- Totals calculated correctly throughout
 
 ---
 
-## Security Test Cases
+### TC-INT-002: Concurrent Cart Operations
+**Test Case ID:** TC-INT-002  
+**Scenario:** Multiple operations on same cart  
+**Priority:** High  
 
-### TC-SEC-001: SQL Injection in Product ID
-**Scenario**: Attempt SQL injection via productId parameter  
-**Expected**: Input is sanitized, no SQL injection possible
+**Test Steps:**
+1. Add item A to cart
+2. Simultaneously add item B to cart
+3. Update item A quantity
+4. Verify cart consistency
 
-### TC-SEC-002: XSS in Product Name
-**Scenario**: Attempt XSS via product name field  
-**Expected**: Input is escaped, no script execution
-
-### TC-SEC-003: CORS Validation
-**Scenario**: Request from unauthorized origin  
-**Expected**: CORS policy blocks unauthorized origins
-
----
-
-## Test Execution Summary Template
-
-| Test Case ID | Test Name | Status | Execution Time | Notes |
-|--------------|-----------|--------|----------------|-------|
-| TC-PROD-001 | Get All Products - Happy Path | | | |
-| TC-PROD-002 | Get Product By ID - Happy Path | | | |
-| TC-PROD-003 | Get Product By ID - Not Found | | | |
-| TC-CART-001 | Add Item to Cart - Happy Path | | | |
-| TC-CART-002 | Add Item - Product Not Found | | | |
-| TC-CART-003 | Add Item - Invalid Quantity (Zero) | | | |
-| TC-CART-004 | Add Item - Invalid Quantity (Negative) | | | |
-| TC-CART-005 | Add Item - Missing Product ID | | | |
-| TC-CART-006 | Add Item - Insufficient Stock | | | |
-| TC-CART-007 | Get Cart - Happy Path | | | |
-| TC-CART-008 | Get Cart - Cart Not Found | | | |
-| TC-CART-009 | Update Cart Item - Happy Path | | | |
-| TC-CART-010 | Update Cart Item - Invalid Quantity | | | |
-| TC-CART-011 | Update Cart Item - Not in Cart | | | |
-| TC-CART-012 | Update Cart Item - Insufficient Stock | | | |
-| TC-CART-013 | Remove Cart Item - Happy Path | | | |
-| TC-CART-014 | Remove Cart Item - Not Found | | | |
-| TC-CART-015 | Clear Cart - Happy Path | | | |
-| TC-CART-016 | Clear Cart - Cart Not Found | | | |
-
-**Total Test Cases**: 19  
-**Passed**: [To be filled]  
-**Failed**: [To be filled]  
-**Blocked**: [To be filled]  
-**Not Executed**: [To be filled]
+**Expected Result:**
+- No data loss
+- All operations reflected correctly
+- No race conditions
 
 ---
 
-## Notes
+## 4. Performance Test Cases
 
-1. All test cases should be executed in the order listed to ensure proper test data setup
-2. Environment variables should be configured before test execution
-3. Database should be reset between test runs for consistent results
-4. All timestamps should be validated for ISO 8601 format
-5. All UUIDs should be validated for proper UUID format
-6. Response times should be monitored and logged
-7. All error responses should include traceId for debugging
+### TC-PERF-001: Response Time - Add to Cart
+**Test Case ID:** TC-PERF-001  
+**Endpoint:** POST /api/cart/add  
+**Scenario:** Measure response time for add operation  
+**Priority:** Medium  
+
+**Test Steps:**
+1. Send 100 sequential requests to add items
+2. Measure response time for each
+
+**Expected Result:**
+- 95th percentile response time < 500ms
+- No timeouts
+- All requests succeed
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2024-01-15  
-**Author**: QA Automation Agent
+### TC-PERF-002: Concurrent Users
+**Test Case ID:** TC-PERF-002  
+**Scenario:** Simulate 100 concurrent users  
+**Priority:** Medium  
+
+**Test Steps:**
+1. Simulate 100 users performing cart operations
+2. Monitor system performance
+
+**Expected Result:**
+- System remains responsive
+- No errors under load
+- Response times within acceptable range
+
+---
+
+## 5. Security Test Cases
+
+### TC-SEC-001: CORS Validation
+**Test Case ID:** TC-SEC-001  
+**Scenario:** Verify CORS headers for allowed origin  
+**Priority:** High  
+
+**Test Steps:**
+1. Send request from http://localhost:4200
+2. Check CORS headers in response
+
+**Expected Result:**
+- Access-Control-Allow-Origin: http://localhost:4200
+- Access-Control-Allow-Credentials: true
+
+---
+
+### TC-SEC-002: SQL Injection Prevention
+**Test Case ID:** TC-SEC-002  
+**Scenario:** Attempt SQL injection in product ID  
+**Priority:** High  
+
+**Test Steps:**
+1. Send request with SQL injection payload:
+   ```json
+   {
+     "productId": "'; DROP TABLE cart; --",
+     "quantity": 1
+   }
+   ```
+
+**Expected Result:**
+- Request handled safely
+- No database corruption
+- Appropriate error response
+
+---
+
+### TC-SEC-003: XSS Prevention
+**Test Case ID:** TC-SEC-003  
+**Scenario:** Attempt XSS in request payload  
+**Priority:** Medium  
+
+**Test Steps:**
+1. Send request with XSS payload in product name
+
+**Expected Result:**
+- Payload sanitized or rejected
+- No script execution
+
+---
+
+## 6. Edge Cases
+
+### TC-EDGE-001: Empty Cart Operations
+**Test Case ID:** TC-EDGE-001  
+**Scenario:** Operations on empty cart  
+**Priority:** Medium  
+
+**Test Steps:**
+1. Get empty cart
+2. Attempt to update non-existent item
+3. Attempt to remove non-existent item
+4. Clear empty cart
+
+**Expected Result:**
+- Appropriate responses for each operation
+- No system errors
+
+---
+
+### TC-EDGE-002: Maximum Quantity
+**Test Case ID:** TC-EDGE-002  
+**Scenario:** Add maximum integer quantity  
+**Priority:** Low  
+
+**Test Steps:**
+1. Add item with quantity = Integer.MAX_VALUE
+
+**Expected Result:**
+- System handles gracefully
+- Either accepts or rejects with validation error
+
+---
+
+### TC-EDGE-003: Special Characters in Product ID
+**Test Case ID:** TC-EDGE-003  
+**Scenario:** Product ID with special characters  
+**Priority:** Low  
+
+**Test Steps:**
+1. Request product with ID containing: @#$%^&*()
+
+**Expected Result:**
+- Handled appropriately
+- No system crash
+
+---
+
+## Test Execution Guidelines
+
+### Prerequisites
+1. Application running on http://localhost:8080
+2. H2 database initialized
+3. Sample products loaded
+4. Postman or Newman installed
+
+### Execution Order
+1. Product Operations (TC-PROD-001 to TC-PROD-004)
+2. Cart Operations - Positive (TC-CART-001, TC-CART-007, TC-CART-009, TC-CART-012, TC-CART-014)
+3. Cart Operations - Negative (TC-CART-002, TC-CART-003, TC-CART-008, TC-CART-010, TC-CART-013)
+4. Validation Tests (TC-CART-004, TC-CART-005, TC-CART-006)
+5. Integration Tests (TC-INT-001, TC-INT-002)
+6. Performance Tests (TC-PERF-001, TC-PERF-002)
+7. Security Tests (TC-SEC-001, TC-SEC-002, TC-SEC-003)
+8. Edge Cases (TC-EDGE-001, TC-EDGE-002, TC-EDGE-003)
+
+### Test Data Requirements
+- Valid Product IDs: PROD-12345, PROD-67890, PROD-11111
+- Invalid Product ID: INVALID-PROD
+- User IDs: user123, user456
+- Test quantities: 1, 2, 5, 10, 100, 1000
+
+### Environment Variables
+- BASE_URL: http://localhost:8080/api
+- USER_ID: guest-user (default)
+- PRODUCT_ID_1: PROD-12345
+- PRODUCT_ID_2: PROD-67890
+
+---
+
+## Test Coverage Matrix
+
+| Endpoint | Positive Tests | Negative Tests | Validation Tests | Total |
+|----------|----------------|----------------|------------------|-------|
+| POST /api/cart/add | 1 | 2 | 3 | 6 |
+| GET /api/cart | 1 | 1 | 0 | 2 |
+| PUT /api/cart/update | 1 | 2 | 0 | 3 |
+| DELETE /api/cart/remove/{id} | 1 | 1 | 0 | 2 |
+| DELETE /api/cart/clear | 1 | 1 | 0 | 2 |
+| GET /api/v1/products | 1 | 0 | 0 | 1 |
+| GET /api/v1/products/{id} | 1 | 2 | 0 | 3 |
+| **Total** | **7** | **9** | **3** | **19** |
+
+---
+
+## Defect Reporting Template
+
+**Defect ID:** DEF-XXXX  
+**Test Case ID:** TC-XXXX  
+**Severity:** Critical/High/Medium/Low  
+**Priority:** P1/P2/P3  
+
+**Summary:** Brief description  
+
+**Steps to Reproduce:**
+1. Step 1
+2. Step 2
+3. Step 3
+
+**Expected Result:** What should happen  
+**Actual Result:** What actually happened  
+
+**Environment:**
+- OS: 
+- Browser/Tool: 
+- Application Version: 
+
+**Attachments:** Screenshots, logs, etc.
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** 2024-01-15  
+**Author:** QA Automation Agent  
+**Status:** Ready for Execution
